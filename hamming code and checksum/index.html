@@ -1,0 +1,2138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ECC & Integrity Studio — Extended Hamming SEC-DED & RFC 1071 Checksum</title>
+  <style>
+    /* ==========================================================================
+       Classic Retro-Functional Software Styling (Win32 / Classic Workstation)
+       Clean borders, beveled buttons, legible monospace bits, zero AI fluff.
+       ========================================================================== */
+    :root {
+      --sys-bg: #ece9d8;
+      --sys-face: #f0f0f0;
+      --sys-window: #ffffff;
+      --sys-border-light: #ffffff;
+      --sys-border-mid: #aca899;
+      --sys-border-dark: #716f64;
+      --sys-border-black: #000000;
+      --sys-text: #000000;
+      --sys-text-muted: #555555;
+      --sys-title-bg: #0055ea;
+      --sys-title-text: #ffffff;
+      --sys-highlight: #316ac5;
+      --sys-highlight-text: #ffffff;
+
+      /* Classic Status & Domain Colors */
+      --color-valid-bg: #e6f4ea;
+      --color-valid-border: #137333;
+      --color-valid-text: #0d5a23;
+
+      --color-warning-bg: #fef7e0;
+      --color-warning-border: #b06000;
+      --color-warning-text: #824700;
+
+      --color-danger-bg: #fce8e6;
+      --color-danger-border: #c5221f;
+      --color-danger-text: #961714;
+
+      --color-parity-bg: #e8f0fe;
+      --color-parity-border: #1a73e8;
+      --color-parity-text: #174ea6;
+
+      --color-overall-bg: #f3e8fd;
+      --color-overall-border: #8430ce;
+      --color-overall-text: #681da8;
+
+      --color-data-bg: #f8f9fa;
+      --color-data-border: #5f6368;
+      --color-data-text: #202124;
+
+      --color-flipped-bg: #ffdddd;
+      --color-flipped-border: #d93025;
+
+      --font-ui: "Segoe UI", Tahoma, "MS Sans Serif", -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: "Cascadia Code", "Consolas", "Courier New", monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--sys-bg);
+      color: var(--sys-text);
+      font-family: var(--font-ui);
+      font-size: 12px;
+      line-height: 1.35;
+      user-select: none;
+      padding: 6px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Outer Window Container */
+    .app-window {
+      background-color: var(--sys-face);
+      border: 2px solid;
+      border-color: var(--sys-border-light) var(--sys-border-black) var(--sys-border-black) var(--sys-border-light);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      box-shadow: 1px 1px 0px var(--sys-border-dark);
+      overflow: hidden;
+    }
+
+    /* Window Title Bar */
+    .window-titlebar {
+      background: linear-gradient(90deg, #0a246a 0%, #a6caf0 100%);
+      color: #ffffff;
+      padding: 3px 6px;
+      font-weight: bold;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      letter-spacing: 0.2px;
+    }
+    .window-titlebar .title-text {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .window-titlebar .title-icon {
+      width: 14px;
+      height: 14px;
+      display: inline-block;
+      background: #ffffff;
+      color: #0a246a;
+      border-radius: 2px;
+      text-align: center;
+      line-height: 14px;
+      font-size: 10px;
+      font-weight: 900;
+      font-family: var(--font-mono);
+    }
+    .window-controls {
+      display: flex;
+      gap: 2px;
+    }
+    .window-btn {
+      width: 16px;
+      height: 14px;
+      background: var(--sys-face);
+      border: 1px solid;
+      border-color: var(--sys-border-light) var(--sys-border-dark) var(--sys-border-dark) var(--sys-border-light);
+      font-size: 9px;
+      line-height: 11px;
+      text-align: center;
+      cursor: pointer;
+      color: #000;
+      padding: 0;
+    }
+
+    /* Classic Menu Bar */
+    .menu-bar {
+      display: flex;
+      background: var(--sys-face);
+      border-bottom: 1px solid var(--sys-border-mid);
+      padding: 1px 2px;
+      gap: 2px;
+    }
+    .menu-item {
+      position: relative;
+    }
+    .menu-button {
+      background: transparent;
+      border: 1px solid transparent;
+      padding: 2px 8px;
+      font-size: 11px;
+      cursor: pointer;
+      font-family: var(--font-ui);
+    }
+    .menu-button:hover, .menu-item.active .menu-button {
+      background: var(--sys-highlight);
+      color: var(--sys-highlight-text);
+      border-color: var(--sys-highlight);
+    }
+    .menu-dropdown {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      background: var(--sys-face);
+      border: 2px solid;
+      border-color: var(--sys-border-light) var(--sys-border-black) var(--sys-border-black) var(--sys-border-light);
+      box-shadow: 2px 2px 4px rgba(0,0,0,0.25);
+      z-index: 1000;
+      min-width: 220px;
+      padding: 2px;
+    }
+    .menu-item.active .menu-dropdown {
+      display: block;
+    }
+    .dropdown-item {
+      padding: 4px 12px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      color: var(--sys-text);
+      font-size: 11px;
+    }
+    .dropdown-item:hover {
+      background: var(--sys-highlight);
+      color: var(--sys-highlight-text);
+    }
+    .dropdown-divider {
+      height: 1px;
+      background: var(--sys-border-mid);
+      border-bottom: 1px solid var(--sys-border-light);
+      margin: 3px 1px;
+    }
+
+    /* Classic Beveled Panels */
+    .sunken-panel {
+      border: 2px solid;
+      border-color: var(--sys-border-dark) var(--sys-border-light) var(--sys-border-light) var(--sys-border-dark);
+      background-color: var(--sys-window);
+    }
+    .raised-panel {
+      border: 2px solid;
+      border-color: var(--sys-border-light) var(--sys-border-dark) var(--sys-border-dark) var(--sys-border-light);
+      background-color: var(--sys-face);
+    }
+
+    /* Main Window Layout */
+    .app-body {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
+      padding: 4px;
+      gap: 4px;
+    }
+
+    /* TOP PANEL: Controls & Input */
+    .top-toolbar-container {
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .toolbar-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .toolbar-label {
+      font-weight: 600;
+      font-size: 11px;
+      color: var(--sys-text);
+      white-space: nowrap;
+    }
+
+    /* Inputs */
+    input[type="text"], select {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 3px 6px;
+      background-color: #ffffff;
+      border: 2px solid;
+      border-color: var(--sys-border-dark) var(--sys-border-light) var(--sys-border-light) var(--sys-border-dark);
+      outline: none;
+      color: #000000;
+    }
+    input[type="text"]:focus, select:focus {
+      background-color: #fffff0;
+      border-color: #000000 #b0b0b0 #b0b0b0 #000000;
+    }
+
+    /* Classic Beveled Buttons */
+    .sys-btn {
+      background-color: var(--sys-face);
+      border: 2px solid;
+      border-color: var(--sys-border-light) var(--sys-border-black) var(--sys-border-black) var(--sys-border-light);
+      box-shadow: 1px 1px 0px var(--sys-border-dark);
+      padding: 3px 10px;
+      font-family: var(--font-ui);
+      font-size: 11px;
+      font-weight: 600;
+      color: #000000;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+    .sys-btn:hover {
+      background-color: #f7f7f7;
+    }
+    .sys-btn:active {
+      border-color: var(--sys-border-black) var(--sys-border-light) var(--sys-border-light) var(--sys-border-black);
+      padding: 4px 9px 2px 11px;
+      box-shadow: none;
+    }
+    .sys-btn.primary {
+      font-weight: 700;
+      color: #002266;
+    }
+    .sys-btn.btn-danger {
+      color: #8b0000;
+    }
+    .sys-btn.btn-success {
+      color: #005a1e;
+    }
+    .sys-btn:disabled {
+      color: var(--sys-border-dark);
+      text-shadow: 1px 1px 0px var(--sys-border-light);
+      cursor: not-allowed;
+    }
+
+    /* MIDDLE WORK AREA (Bit Grid & Checksum Overview) */
+    .middle-work-area {
+      display: grid;
+      grid-template-columns: 1fr 310px;
+      gap: 4px;
+      flex: 0 0 auto;
+      max-height: 290px;
+      min-height: 240px;
+    }
+
+    /* Bit Grid Section */
+    .bit-grid-wrapper {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      padding: 4px;
+    }
+    .section-header {
+      background: #e4e0d4;
+      border-bottom: 1px solid var(--sys-border-mid);
+      padding: 2px 6px;
+      font-weight: bold;
+      font-size: 11px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .section-header .tag {
+      font-size: 10px;
+      font-weight: normal;
+      background: #ffffff;
+      padding: 1px 5px;
+      border: 1px solid var(--sys-border-mid);
+    }
+
+    .bit-grid-container {
+      padding: 8px;
+      overflow-x: auto;
+      overflow-y: auto;
+      background: #fafafa;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .bit-grid-legend {
+      display: flex;
+      gap: 12px;
+      font-size: 10px;
+      padding-bottom: 4px;
+      border-bottom: 1px dashed #d0d0d0;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .legend-box {
+      width: 12px;
+      height: 12px;
+      border: 1px solid #666;
+    }
+
+    .bit-grid-cells {
+      display: flex;
+      gap: 4px;
+      padding: 4px 2px;
+      align-items: stretch;
+      min-width: min-content;
+    }
+
+    /* Individual Bit Cell */
+    .bit-cell {
+      border: 2px solid;
+      border-color: var(--sys-border-light) var(--sys-border-dark) var(--sys-border-dark) var(--sys-border-light);
+      background: var(--sys-face);
+      min-width: 52px;
+      width: 52px;
+      display: flex;
+      flex-direction: column;
+      cursor: pointer;
+      position: relative;
+      transition: background-color 0.1s, transform 0.05s;
+    }
+    .bit-cell:hover {
+      background: #ffffff;
+    }
+    .bit-cell:active {
+      border-color: var(--sys-border-dark) var(--sys-border-light) var(--sys-border-light) var(--sys-border-dark);
+    }
+    .bit-cell.cell-parity {
+      background-color: var(--color-parity-bg);
+      border-color: #9bbef5 #4a77b8 #4a77b8 #9bbef5;
+    }
+    .bit-cell.cell-overall {
+      background-color: var(--color-overall-bg);
+      border-color: #d6bdf5 #784bb8 #784bb8 #d6bdf5;
+    }
+    .bit-cell.cell-data {
+      background-color: #ffffff;
+      border-color: #e0e0e0 #999 #999 #e0e0e0;
+    }
+    .bit-cell.cell-flipped {
+      background-color: var(--color-flipped-bg) !important;
+      border-color: #ff8888 #b80000 #b80000 #ff8888 !important;
+      box-shadow: 0 0 0 1px #d93025;
+    }
+    .bit-cell.cell-highlight-coverage {
+      outline: 2px solid #e37400;
+      background-color: #fff8e1 !important;
+      transform: translateY(-2px);
+    }
+
+    .cell-top-bar {
+      font-size: 10px;
+      font-weight: 700;
+      text-align: center;
+      padding: 2px 1px;
+      border-bottom: 1px solid rgba(0,0,0,0.15);
+      background: rgba(0,0,0,0.04);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+    }
+    .cell-role-badge {
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+    .cell-role-p0 { color: var(--color-overall-text); }
+    .cell-role-p  { color: var(--color-parity-text); }
+    .cell-role-d  { color: var(--color-data-text); }
+
+    .cell-value-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 0;
+    }
+    .cell-bit-val {
+      font-family: var(--font-mono);
+      font-size: 24px;
+      font-weight: bold;
+      line-height: 1;
+      color: #000;
+    }
+    .cell-original-tag {
+      font-size: 9px;
+      color: #777;
+      margin-top: 2px;
+      font-family: var(--font-mono);
+    }
+    .cell-flipped-tag {
+      font-size: 9px;
+      font-weight: bold;
+      color: #c5221f;
+      margin-top: 2px;
+      font-family: var(--font-mono);
+    }
+
+    .cell-bottom-bar {
+      font-size: 9px;
+      font-family: var(--font-mono);
+      text-align: center;
+      padding: 2px 1px;
+      background: rgba(0,0,0,0.03);
+      border-top: 1px solid rgba(0,0,0,0.1);
+      color: #444;
+    }
+
+    /* Checksum Side Panel */
+    .checksum-panel-wrapper {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      padding: 4px;
+    }
+    .checksum-body {
+      padding: 8px;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 11px;
+      background: #fafafa;
+    }
+    .reg-box {
+      border: 1px solid var(--sys-border-mid);
+      background: #ffffff;
+      padding: 5px 8px;
+    }
+    .reg-title {
+      font-size: 10px;
+      font-weight: bold;
+      color: var(--sys-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
+    .reg-val {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: bold;
+      color: #000000;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+    .reg-val-bin {
+      font-size: 11px;
+      font-weight: normal;
+      color: #444;
+    }
+    .status-badge-inline {
+      padding: 2px 6px;
+      font-weight: bold;
+      font-size: 10px;
+      border: 1px solid;
+      display: inline-block;
+      text-align: center;
+    }
+
+    /* BOTTOM LOG & ANALYSIS PANEL (Tabbed Console) */
+    .bottom-analysis-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 180px;
+      overflow: hidden;
+    }
+    .tab-bar {
+      display: flex;
+      padding-left: 6px;
+      gap: 2px;
+      background: var(--sys-face);
+      border-bottom: 1px solid var(--sys-border-dark);
+    }
+    .tab-btn {
+      padding: 4px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      border: 2px solid;
+      border-color: var(--sys-border-light) var(--sys-border-dark) transparent var(--sys-border-light);
+      border-top-left-radius: 3px;
+      border-top-right-radius: 3px;
+      background: #e0ded4;
+      cursor: pointer;
+      position: relative;
+      top: 1px;
+    }
+    .tab-btn.active {
+      background: #ffffff;
+      border-bottom: 2px solid #ffffff;
+      z-index: 10;
+      padding-top: 5px;
+      top: 0;
+    }
+    .tab-content-container {
+      flex: 1;
+      background: #ffffff;
+      overflow-y: auto;
+      padding: 8px 10px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      border-top: none;
+    }
+    .tab-pane {
+      display: none;
+      height: 100%;
+    }
+    .tab-pane.active {
+      display: block;
+    }
+
+    /* Diagnostic Status Box */
+    .diagnostic-alert {
+      border: 2px solid;
+      padding: 6px 10px;
+      font-family: var(--font-ui);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .diagnostic-alert.status-valid {
+      background-color: var(--color-valid-bg);
+      border-color: var(--color-valid-border);
+      color: var(--color-valid-text);
+    }
+    .diagnostic-alert.status-warning {
+      background-color: var(--color-warning-bg);
+      border-color: var(--color-warning-border);
+      color: var(--color-warning-text);
+    }
+    .diagnostic-alert.status-danger {
+      background-color: var(--color-danger-bg);
+      border-color: var(--color-danger-border);
+      color: var(--color-danger-text);
+    }
+    .diagnostic-title {
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .diagnostic-desc {
+      font-size: 11px;
+      margin-top: 2px;
+    }
+
+    /* Syndrome Step List & Arithmetic Box */
+    .analysis-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 6px 0;
+      font-size: 11px;
+    }
+    .analysis-table th, .analysis-table td {
+      border: 1px solid #d0d0d0;
+      padding: 3px 6px;
+      text-align: left;
+    }
+    .analysis-table th {
+      background: #f0f0f0;
+      font-family: var(--font-ui);
+      font-weight: 600;
+    }
+    .analysis-table tr.active-row {
+      background: #fff8e1;
+      font-weight: bold;
+    }
+    .math-block {
+      background: #f8f9fa;
+      border: 1px solid #e0e0e0;
+      padding: 6px 8px;
+      margin: 4px 0;
+      font-family: var(--font-mono);
+      white-space: pre-wrap;
+      line-height: 1.4;
+    }
+
+    /* STATUS BAR */
+    .status-bar {
+      display: flex;
+      background: var(--sys-face);
+      border-top: 1px solid var(--sys-border-mid);
+      padding: 2px;
+      gap: 2px;
+    }
+    .status-panel {
+      padding: 1px 6px;
+      font-size: 11px;
+      background: var(--sys-face);
+      border: 1px solid;
+      border-color: var(--sys-border-dark) var(--sys-border-light) var(--sys-border-light) var(--sys-border-dark);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .status-panel.grow {
+      flex: 1;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-window">
+  <!-- Titlebar -->
+  <div class="window-titlebar">
+    <div class="title-text">
+      <span class="title-icon">Σ</span>
+      <span>ECC & Integrity Studio — Extended Hamming (SEC-DED) & Internet Checksum (RFC 1071)</span>
+    </div>
+    <div class="window-controls">
+      <button class="window-btn" title="Minimize">_</button>
+      <button class="window-btn" title="Maximize">□</button>
+      <button class="window-btn" title="Close">×</button>
+    </div>
+  </div>
+
+  <!-- Classic Menu Bar -->
+  <div class="menu-bar">
+    <div class="menu-item" id="menu-file">
+      <button class="menu-button" onclick="toggleMenu('menu-file')">File</button>
+      <div class="menu-dropdown">
+        <div class="dropdown-item" onclick="resetAllDefaults()">New / Reset to Default <span>Ctrl+N</span></div>
+        <div class="dropdown-item" onclick="exportStateJson()">Export Codeword State (JSON)</div>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-item" onclick="window.print()">Print Analysis Sheet <span>Ctrl+P</span></div>
+      </div>
+    </div>
+    <div class="menu-item" id="menu-presets">
+      <button class="menu-button" onclick="toggleMenu('menu-presets')">Presets</button>
+      <div class="menu-dropdown">
+        <div class="dropdown-item" onclick="loadPreset('nybble')">4-bit Nybble [1011] (Hamming 8,4 SEC-DED)</div>
+        <div class="dropdown-item" onclick="loadPreset('byte_a')">8-bit ASCII 'A' [01000001] (Hamming 13,8 SEC-DED)</div>
+        <div class="dropdown-item" onclick="loadPreset('word_11')">11-bit Word [10110010110] (Hamming 16,11 SEC-DED)</div>
+        <div class="dropdown-item" onclick="loadPreset('hex_cafe')">16-bit Hex 0xCAFE (Hamming 22,16 SEC-DED)</div>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-item" onclick="loadPreset('text_ping')">Text "PING" (Multi-word Checksum demo)</div>
+      </div>
+    </div>
+    <div class="menu-item" id="menu-inject">
+      <button class="menu-button" onclick="toggleMenu('menu-inject')">Error Injection</button>
+      <div class="menu-dropdown">
+        <div class="dropdown-item" onclick="injectErrors(1)">Inject 1 Bit Error (Random)</div>
+        <div class="dropdown-item" onclick="injectErrors(2)">Inject 2 Bit Errors (Random)</div>
+        <div class="dropdown-item" onclick="injectParityBitError()">Inject Error in Parity Bit (P0/P1)</div>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-item" onclick="clearErrors()">Revert Injected Errors (Clean Codeword)</div>
+        <div class="dropdown-item" onclick="applyCorrection()">Execute Automatic SEC Correction</div>
+      </div>
+    </div>
+    <div class="menu-item" id="menu-help">
+      <button class="menu-button" onclick="toggleMenu('menu-help')">Help</button>
+      <div class="menu-dropdown">
+        <div class="dropdown-item" onclick="switchTab('tab-matrix')">View Parity Check Matrix (H)</div>
+        <div class="dropdown-item" onclick="alert('ECC & Integrity Studio v2.4\n\nExtended Hamming SEC-DED Scheme: 1-bit error correction + 2-bit error detection.\nRFC 1071 16-bit 1s complement checksum generator.\n\nCrafted for systems engineers, network architects, and CS education.')">About ECC Studio</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-body">
+    <!-- TOP TOOLBAR: Input & Control Center -->
+    <div class="raised-panel top-toolbar-container">
+      <div class="toolbar-row">
+        <div class="toolbar-group">
+          <label class="toolbar-label" for="input-format">Data Format:</label>
+          <select id="input-format" onchange="onFormatChange()">
+            <option value="bin" selected>Binary Bits</option>
+            <option value="hex">Hexadecimal (0x)</option>
+            <option value="text">ASCII Text</option>
+          </select>
+        </div>
+
+        <div class="toolbar-group" style="flex: 1; min-width: 200px;">
+          <label class="toolbar-label" for="data-input">Input Data:</label>
+          <input type="text" id="data-input" value="1011001" style="flex: 1;" placeholder="Enter binary (e.g. 1011001) or text..." oninput="onInputDataChanged()">
+        </div>
+
+        <button class="sys-btn primary" onclick="rebuildCodeword()" title="Encode data and generate parity/checksum bits">
+          <span>⚡ Encode & Build Grid</span>
+        </button>
+
+        <button class="sys-btn" onclick="clearErrors()" title="Reset codeword to original clean bits">
+          <span>↺ Clear Errors</span>
+        </button>
+      </div>
+
+      <!-- Action & Error Injection Controls -->
+      <div class="toolbar-row" style="border-top: 1px dotted var(--sys-border-mid); padding-top: 4px;">
+        <span class="toolbar-label" style="color: var(--sys-border-dark);">Interactive Hardware Simulator:</span>
+
+        <button class="sys-btn" onclick="injectErrors(1)" title="Inject exactly 1 bit error at a random position">
+          <span>⚡ Inject 1 Bit Error</span>
+        </button>
+
+        <button class="sys-btn btn-danger" onclick="injectErrors(2)" title="Inject 2 bit errors to trigger SEC-DED 2-bit detection">
+          <span>⚡ Inject 2 Bit Errors</span>
+        </button>
+
+        <button class="sys-btn btn-success" id="btn-autocorrect" onclick="applyCorrection()" title="Apply syndrome correction to recover original data">
+          <span>✔ Auto-Correct (SEC 1-Bit)</span>
+        </button>
+
+        <button class="sys-btn btn-success" id="btn-resolve-2bit" onclick="resolveDoubleBitError()" style="display: none;" title="Resolve 2-bit error using Syndrome algebraic pairs and Checksum tie-breaker">
+          <span>⚡ Resolve 2-Bit Error (DEC + Checksum)</span>
+        </button>
+
+        <div style="margin-left: auto; display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 11px; color: #444;" id="bit-stats-label">Data: 7 bits | Parity: 4 bits + P0 | Total: 12 bits</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- MIDDLE WORK AREA: Codeword Bit Grid & Internet Checksum Register -->
+    <div class="middle-work-area">
+      <!-- Bit Grid -->
+      <div class="raised-panel bit-grid-wrapper">
+        <div class="section-header">
+          <span>Codeword Register (Click any bit to toggle 0 ↔ 1)</span>
+          <span class="tag" id="grid-instructions">Hover Parity bit to highlight monitored data bits</span>
+        </div>
+
+        <div class="sunken-panel bit-grid-container">
+          <div class="bit-grid-legend">
+            <div class="legend-item">
+              <div class="legend-box" style="background: var(--color-overall-bg); border-color: var(--color-overall-border);"></div>
+              <span><strong>P0</strong> Overall Parity (SEC-DED)</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-box" style="background: var(--color-parity-bg); border-color: var(--color-parity-border);"></div>
+              <span><strong>P1..Pn</strong> Hamming Parity</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-box" style="background: #ffffff; border-color: #999;"></div>
+              <span><strong>D3..Dn</strong> Data Bits</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-box" style="background: var(--color-flipped-bg); border-color: var(--color-flipped-border);"></div>
+              <span><strong>Flipped Bit [!]</strong></span>
+            </div>
+          </div>
+
+          <!-- Interactive Bit Cells will be rendered here -->
+          <div class="bit-grid-cells" id="bit-grid-cells">
+            <!-- Dynamic Cells -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Checksum Side Panel -->
+      <div class="raised-panel checksum-panel-wrapper">
+        <div class="section-header">
+          <span>RFC 1071 Checksum Engine</span>
+          <span class="tag" id="chk-valid-tag">VALID</span>
+        </div>
+
+        <div class="sunken-panel checksum-body">
+          <div class="reg-box">
+            <div class="reg-title">16-bit Internet Checksum (Hex)</div>
+            <div class="reg-val">
+              <span id="chk-hex-display">0x0000</span>
+              <span class="status-badge-inline" id="chk-status-badge" style="background: #e6f4ea; border-color: #137333; color: #0d5a23;">PASS</span>
+            </div>
+            <div class="reg-val-bin" id="chk-bin-display">0000 0000 0000 0000</div>
+          </div>
+
+          <div class="reg-box">
+            <div class="reg-title">Receiver Verification Check</div>
+            <div style="font-size: 11px; margin-top: 2px;">
+              Sum(Words) + Checksum = <strong id="chk-verif-sum">0xFFFF</strong>
+            </div>
+            <div style="font-size: 10px; color: var(--sys-text-muted);" id="chk-verif-desc">
+              1's complement sum equals 0xFFFF (All 1s = zero carry).
+            </div>
+          </div>
+
+          <div class="reg-box">
+            <div class="reg-title">Secondary Integrity Hashes</div>
+            <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); margin-top: 2px;">
+              <span>Adler-32:</span>
+              <strong id="adler32-display">0x00000000</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); margin-top: 2px;">
+              <span>CRC-32:</span>
+              <strong id="crc32-display">0x00000000</strong>
+            </div>
+          </div>
+
+          <div style="font-size: 10px; color: var(--sys-text-muted); line-height: 1.3; margin-top: auto; padding: 2px 4px; background: #eee; border: 1px solid #ddd;">
+            <strong>Systems Note:</strong> Checksum verifies packet-level integrity across 16-bit boundaries; Extended Hamming corrects localized 1-bit memory/bus upsets and halts on 2-bit errors.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOTTOM ANALYSIS LOG & CONSOLE (Tabbed Interface) -->
+    <div class="raised-panel bottom-analysis-area">
+      <div class="tab-bar">
+        <button class="tab-btn active" id="btn-tab-syndrome" onclick="switchTab('tab-syndrome')">Syndrome & SEC-DED Analysis</button>
+        <button class="tab-btn" id="btn-tab-checksum" onclick="switchTab('tab-checksum')">16-bit Checksum Math (RFC 1071)</button>
+        <button class="tab-btn" id="btn-tab-matrix" onclick="switchTab('tab-matrix')">Parity Check Matrix (H) & Masks</button>
+        <button class="tab-btn" id="btn-tab-history" onclick="switchTab('tab-history')">Hardware Event Log</button>
+      </div>
+
+      <div class="sunken-panel tab-content-container">
+        <!-- TAB 1: SYNDROME & SEC-DED DIAGNOSIS -->
+        <div class="tab-pane active" id="tab-syndrome">
+          <!-- Diagnostic Status Alert -->
+          <div class="diagnostic-alert status-valid" id="diagnostic-banner">
+            <div>
+              <div class="diagnostic-title" id="diag-title">STATUS: CODEWORD VALID (NO ERRORS DETECTED)</div>
+              <div class="diagnostic-desc" id="diag-desc">Syndrome S = 0, Overall Parity P0 matches. Codeword is pristine.</div>
+            </div>
+            <div style="font-family: var(--font-mono); font-size: 12px; font-weight: bold;" id="diag-syndrome-code">
+              S = 0 (0b0000) | P_check = 0
+            </div>
+          </div>
+
+          <!-- Syndrome Calculations Table -->
+          <div style="font-weight: bold; font-family: var(--font-ui); margin-bottom: 4px;">
+            Syndrome Bitwise Equations (Modulo-2 / XOR Parity Checks):
+          </div>
+          <div id="syndrome-equations-container" class="math-block">
+            <!-- Dynamic Equations -->
+          </div>
+
+          <!-- SEC-DED Truth Table -->
+          <div style="font-weight: bold; font-family: var(--font-ui); margin-top: 8px; margin-bottom: 4px;">
+            SEC-DED Hardware Decision Matrix:
+          </div>
+          <table class="analysis-table" id="sec-ded-truth-table">
+            <thead>
+              <tr>
+                <th style="width: 130px;">Syndrome (S)</th>
+                <th style="width: 140px;">Overall Parity (P_chk)</th>
+                <th>Error Classification</th>
+                <th style="width: 220px;">Action / Hardware State</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr id="row-case-0" class="active-row">
+                <td><code>S == 0</code></td>
+                <td><code>P_chk == 0</code> (Even)</td>
+                <td><span style="color: #0d5a23; font-weight: bold;">No Error</span></td>
+                <td>Codeword valid. Data accepted.</td>
+              </tr>
+              <tr id="row-case-1">
+                <td><code>S != 0</code> (pos <em>k</em>)</td>
+                <td><code>P_chk == 1</code> (Odd)</td>
+                <td><span style="color: #b06000; font-weight: bold;">Single Bit Error (Data or Parity)</span></td>
+                <td>Correctable: Invert bit at index <em>k</em>.</td>
+              </tr>
+              <tr id="row-case-p0">
+                <td><code>S == 0</code></td>
+                <td><code>P_chk == 1</code> (Odd)</td>
+                <td><span style="color: #b06000; font-weight: bold;">Single Bit Error in P0</span></td>
+                <td>Correctable: Invert P0 bit. Data intact.</td>
+              </tr>
+              <tr id="row-case-2">
+                <td><code>S != 0</code></td>
+                <td><code>P_chk == 0</code> (Even)</td>
+                <td><span style="color: #c5221f; font-weight: bold;">Double Bit Error (2 Bits Flipped)</span></td>
+                <td>Uncorrectable with standalone SEC-DED! (Adapted DEC Resolver active below)</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Double-Bit Error Resolution Panel (Adapts SEC-DED + RFC 1071 Checksum for 2-bit correction) -->
+          <div id="double-bit-resolver-panel" style="display: none; margin-top: 8px; border: 2px solid #b06000; background: #fffdf5; padding: 6px 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <span style="font-weight: bold; color: #824700; font-family: var(--font-ui); font-size: 11px;">
+                ⚡ Extended Hamming 2-Bit Correction Resolver (Syndrome + RFC 1071 Checksum Tie-Breaker):
+              </span>
+              <button class="sys-btn btn-success" id="btn-apply-2bit-panel" onclick="resolveDoubleBitError()">
+                ✔ Apply 2-Bit Correction
+              </button>
+            </div>
+            <div style="font-size: 10px; color: #555; margin-bottom: 4px;">
+              SEC-DED flags a double-bit error because S ≠ 0 and P_check is even. In binary Hamming codes, any candidate pair (<em>i</em>, <em>j</em>) satisfies <code>i ⊕ j = S</code>. The Internet Checksum tests each candidate to isolate the true flipped bits:
+            </div>
+            <div id="double-bit-candidates-container" class="math-block" style="margin: 0; max-height: 110px; overflow-y: auto;">
+              <!-- Dynamic Candidate Pairs -->
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: RFC 1071 CHECKSUM MATH -->
+        <div class="tab-pane" id="tab-checksum">
+          <div style="font-family: var(--font-ui); font-size: 11px; margin-bottom: 6px; line-height: 1.4;">
+            <strong>Internet Checksum Algorithm (RFC 1071):</strong>
+            Data is parsed into 16-bit big-endian words. The words are summed using 1's complement arithmetic (any carry past 16 bits wraps around and adds to the least-significant bit). The total sum is then bitwise inverted (NOT).
+          </div>
+          <div id="checksum-step-container" class="math-block">
+            <!-- Dynamic arithmetic steps -->
+          </div>
+        </div>
+
+        <!-- TAB 3: PARITY CHECK MATRIX (H) & MASKS -->
+        <div class="tab-pane" id="tab-matrix">
+          <div style="font-family: var(--font-ui); font-size: 11px; margin-bottom: 6px;">
+            <strong>Parity Check Matrix (H):</strong>
+            In Hamming codes, each column <em>j</em> of the parity check matrix is the binary representation of index <em>j</em>.
+            Multiplying <em>H</em> by the received column vector <em>r</em> produces syndrome <em>S = H · r</em>.
+          </div>
+          <div id="matrix-display-container" class="math-block">
+            <!-- Dynamic Matrix Display -->
+          </div>
+        </div>
+
+        <!-- TAB 4: HARDWARE EVENT LOG -->
+        <div class="tab-pane" id="tab-history">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <span style="font-family: var(--font-ui); font-weight: bold;">Diagnostic Event Trace:</span>
+            <button class="sys-btn" style="padding: 1px 6px; font-size: 10px;" onclick="clearEventLog()">Clear Log</button>
+          </div>
+          <div id="event-log-container" class="math-block" style="min-height: 120px; max-height: 180px; overflow-y: auto;">
+            <!-- Dynamic Logs -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATUS BAR -->
+    <div class="status-bar">
+      <div class="status-panel" style="width: 90px;" id="sb-status">Ready</div>
+      <div class="status-panel" style="width: 170px;" id="sb-scheme">SEC-DED Extended Hamming</div>
+      <div class="status-panel" style="width: 110px;" id="sb-errors">Errors: 0</div>
+      <div class="status-panel grow" id="sb-diagnosis">Diagnosis: Pristine Codeword</div>
+      <div class="status-panel" style="width: 130px;" id="sb-chk">Checksum: 0x0000</div>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================================================
+     CORE LOGIC: Bit Manipulator, Extended Hamming, Internet Checksum & UI
+     Zero external dependencies. Plain, robust, human-written JavaScript.
+     ========================================================================== -->
+<script>
+/**
+ * -----------------------------------------------------------------------------
+ * Bit Manipulator Utilities
+ * Standardized conversion between string/text/hex inputs and binary bit arrays.
+ * -----------------------------------------------------------------------------
+ */
+const BitUtils = {
+  textToBits(str) {
+    const bits = [];
+    for (let i = 0; i < str.length; i++) {
+      const code = str.charCodeAt(i) & 0xFF;
+      for (let b = 7; b >= 0; b--) {
+        bits.push((code >> b) & 1);
+      }
+    }
+    return bits.length > 0 ? bits : [0];
+  },
+
+  hexToBits(hexStr) {
+    const clean = hexStr.replace(/^0x/i, '').replace(/[^0-9a-fA-F]/g, '');
+    if (!clean) return [0];
+    const bits = [];
+    for (let i = 0; i < clean.length; i++) {
+      const nibble = parseInt(clean[i], 16);
+      for (let b = 3; b >= 0; b--) {
+        bits.push((nibble >> b) & 1);
+      }
+    }
+    return bits;
+  },
+
+  binaryStringToBits(binStr) {
+    const clean = binStr.replace(/[^01]/g, '');
+    if (!clean) return [0];
+    return clean.split('').map(c => parseInt(c, 10));
+  },
+
+  bitsToHex(bits) {
+    let hex = '';
+    // Pad to multiple of 4
+    const padCount = (4 - (bits.length % 4)) % 4;
+    const padded = [...Array(padCount).fill(0), ...bits];
+    for (let i = 0; i < padded.length; i += 4) {
+      const nibble = (padded[i] << 3) | (padded[i+1] << 2) | (padded[i+2] << 1) | padded[i+3];
+      hex += nibble.toString(16).toUpperCase();
+    }
+    return '0x' + (hex || '0');
+  },
+
+  bitsToBytes(bits) {
+    const bytes = [];
+    // Pad to multiple of 8
+    const padCount = (8 - (bits.length % 8)) % 8;
+    const padded = [...bits, ...Array(padCount).fill(0)];
+    for (let i = 0; i < padded.length; i += 8) {
+      let byte = 0;
+      for (let b = 0; b < 8; b++) {
+        byte = (byte << 1) | padded[i + b];
+      }
+      bytes.push(byte);
+    }
+    return bytes;
+  }
+};
+
+/**
+ * -----------------------------------------------------------------------------
+ * Extended Hamming Code (SEC-DED) Architecture
+ * Implements:
+ * 1. Systematic parity bit injection at powers of 2 (1, 2, 4, 8, ...).
+ * 2. Overall parity bit P0 for Double Error Detection (DED).
+ * 3. Exact syndrome calculation and 1-bit / 2-bit error differentiation.
+ * -----------------------------------------------------------------------------
+ */
+class ExtendedHamming {
+  /**
+   * Determine the number of parity bits r required for m data bits:
+   * 2^r >= m + r + 1
+   */
+  static calcParityCount(m) {
+    let r = 1;
+    while ((1 << r) < (m + r + 1)) {
+      r++;
+    }
+    return r;
+  }
+
+  /**
+   * Encode data bits into an Extended Hamming Codeword.
+   * Total length n = m + r + 1 (with index 0 used for P0).
+   * Parity positions: 1, 2, 4, 8, ...
+   * Data positions: 3, 5, 6, 7, 9, 10, ...
+   */
+  static encode(dataBits) {
+    const m = dataBits.length;
+    const r = this.calcParityCount(m);
+    const totalHammingLen = m + r; // positions 1 to totalHammingLen
+
+    // Prepare codeword array: index 0 is P0, indices 1..totalHammingLen are standard Hamming
+    const codeword = [];
+
+    // Temporary slot assignment
+    let dataIdx = 0;
+    for (let i = 0; i <= totalHammingLen; i++) {
+      if (i === 0) {
+        // P0 placeholder
+        codeword.push({
+          pos: 0,
+          role: 'P0',
+          isParity: true,
+          parityIndex: 0,
+          bit: 0,
+          originalBit: 0,
+          covers: [] // covers all positions
+        });
+      } else if ((i & (i - 1)) === 0) {
+        // Power of 2: Parity bit Pi
+        codeword.push({
+          pos: i,
+          role: `P${i}`,
+          isParity: true,
+          parityIndex: i,
+          bit: 0,
+          originalBit: 0,
+          covers: []
+        });
+      } else {
+        // Data bit Dj
+        const dBit = dataIdx < m ? dataBits[dataIdx] : 0;
+        codeword.push({
+          pos: i,
+          role: `D${i}`,
+          isParity: false,
+          parityIndex: null,
+          dataIndex: dataIdx,
+          bit: dBit,
+          originalBit: dBit,
+          covers: []
+        });
+        dataIdx++;
+      }
+    }
+
+    // Compute standard parity bits P_j at power-of-2 positions
+    // Parity bit at position 2^k checks all positions p whose k-th bit is 1.
+    for (let j = 0; j < r; j++) {
+      const pPos = 1 << j;
+      let parityXor = 0;
+      const covers = [];
+
+      for (let p = 1; p <= totalHammingLen; p++) {
+        if ((p & pPos) !== 0) {
+          covers.push(p);
+          if (p !== pPos) {
+            parityXor ^= codeword[p].bit;
+          }
+        }
+      }
+
+      codeword[pPos].bit = parityXor;
+      codeword[pPos].originalBit = parityXor;
+      codeword[pPos].covers = covers;
+    }
+
+    // Compute Overall Parity Bit P0 (Even parity over all bits 1..totalHammingLen)
+    let p0Xor = 0;
+    const allPositions = [];
+    for (let p = 1; p <= totalHammingLen; p++) {
+      allPositions.push(p);
+      p0Xor ^= codeword[p].bit;
+    }
+    codeword[0].bit = p0Xor;
+    codeword[0].originalBit = p0Xor;
+    codeword[0].covers = allPositions;
+
+    return {
+      codeword,
+      m,
+      r,
+      totalBits: totalHammingLen + 1
+    };
+  }
+
+  /**
+   * Analyze received codeword, compute syndrome vector and overall parity check.
+   */
+  static analyze(codeword) {
+    const n = codeword.length - 1; // max index
+    // Determine r
+    let r = 0;
+    while ((1 << r) <= n) {
+      r++;
+    }
+
+    const syndromeBits = [];
+    const equations = [];
+    let syndromeValue = 0;
+
+    // Check each parity position 1, 2, 4, 8, ...
+    for (let j = 0; j < r; j++) {
+      const pPos = 1 << j;
+      let xorSum = 0;
+      const checkedPositions = [];
+      const checkedVals = [];
+
+      for (let p = 1; p <= n; p++) {
+        if ((p & pPos) !== 0) {
+          checkedPositions.push(codeword[p].role);
+          checkedVals.push(codeword[p].bit);
+          xorSum ^= codeword[p].bit;
+        }
+      }
+
+      syndromeBits.push(xorSum);
+      if (xorSum === 1) {
+        syndromeValue |= pPos;
+      }
+
+      equations.push({
+        parityPos: pPos,
+        parityBitIndex: j,
+        syndromeBit: xorSum,
+        formula: `s${j} = ` + checkedPositions.join(' ⊕ '),
+        valuesStr: checkedVals.join(' ⊕ ') + ` = ${xorSum}`,
+        passed: xorSum === 0
+      });
+    }
+
+    // Compute Overall Parity Check P_check across ALL bits 0..n
+    let overallXor = 0;
+    const allVals = [];
+    for (let p = 0; p <= n; p++) {
+      overallXor ^= codeword[p].bit;
+      allVals.push(codeword[p].bit);
+    }
+
+    // Error Classification according to SEC-DED rules:
+    // 1. S == 0 and overallXor == 0 -> No Error (VALID)
+    // 2. S != 0 and overallXor == 1 -> Single-Bit Error at position S (CORRECTABLE)
+    // 3. S == 0 and overallXor == 1 -> Single-Bit Error in P0 itself (CORRECTABLE)
+    // 4. S != 0 and overallXor == 0 -> Double-Bit Error (UNCORRECTABLE, DED ACTIVATED)
+    let classification = 'VALID';
+    let errorBitPos = null;
+    let description = '';
+
+    if (syndromeValue === 0 && overallXor === 0) {
+      classification = 'VALID';
+      description = 'Syndrome S = 0, Overall parity check matches. Codeword is pristine.';
+    } else if (syndromeValue !== 0 && overallXor === 1) {
+      classification = 'SINGLE_BIT_CORRECTABLE';
+      errorBitPos = syndromeValue;
+      description = `Single bit error pinpointed at codeword position #${syndromeValue} (${codeword[syndromeValue] ? codeword[syndromeValue].role : 'unknown'}). Correctable!`;
+    } else if (syndromeValue === 0 && overallXor === 1) {
+      classification = 'SINGLE_BIT_P0';
+      errorBitPos = 0;
+      description = 'Single bit error detected strictly in the overall parity bit P0. Payload data is fully valid.';
+    } else if (syndromeValue !== 0 && overallXor === 0) {
+      classification = 'DOUBLE_BIT_DETECTED';
+      description = `Double-bit error detected! Syndrome S = ${syndromeValue}, but overall parity is even. Uncorrectable (preventing silent memory corruption).`;
+    } else {
+      classification = 'MULTI_BIT_DETECTED';
+      description = 'Multi-bit error detected.';
+    }
+
+    return {
+      r,
+      syndromeBits,
+      syndromeValue,
+      overallParityCheck: overallXor,
+      equations,
+      classification,
+      errorBitPos,
+      description
+    };
+  }
+}
+
+/**
+ * -----------------------------------------------------------------------------
+ * RFC 1071 Internet Checksum & Digest Algorithms
+ * 16-bit 1's complement addition with end-around carry tracking.
+ * -----------------------------------------------------------------------------
+ */
+class InternetChecksum {
+  /**
+   * Computes the 16-bit Internet Checksum over an array of bytes.
+   * Returns arithmetic steps for step-by-step visual display.
+   */
+  static calculateWithSteps(bytes) {
+    const steps = [];
+    // Ensure even byte length (pad with 0 byte if odd)
+    const paddedBytes = [...bytes];
+    let oddPadded = false;
+    if (paddedBytes.length % 2 !== 0) {
+      paddedBytes.push(0);
+      oddPadded = true;
+    }
+
+    let sum = 0;
+    const words = [];
+
+    // Parse into 16-bit big-endian words
+    for (let i = 0; i < paddedBytes.length; i += 2) {
+      const word = (paddedBytes[i] << 8) | paddedBytes[i + 1];
+      words.push(word);
+    }
+
+    steps.push({
+      step: 'init',
+      title: 'Word Segmentation',
+      detail: `Input size: ${bytes.length} bytes ${oddPadded ? '(+1 zero padding byte appended)' : ''} → ${words.length} 16-bit word(s).`
+    });
+
+    for (let idx = 0; idx < words.length; idx++) {
+      const word = words[idx];
+      const prevSum = sum;
+      sum += word;
+
+      let carryStr = 'none';
+      if (sum > 0xFFFF) {
+        const carry = sum >> 16;
+        const wrapped = (sum & 0xFFFF) + carry;
+        carryStr = `Carry: +${carry} wrapped around → 0x${wrapped.toString(16).toUpperCase().padStart(4, '0')}`;
+        sum = wrapped;
+      }
+
+      steps.push({
+        step: 'accumulate',
+        title: `Add Word #${idx + 1} [0x${word.toString(16).toUpperCase().padStart(4, '0')}]`,
+        detail: `0x${prevSum.toString(16).toUpperCase().padStart(4, '0')} + 0x${word.toString(16).toUpperCase().padStart(4, '0')} = 0x${sum.toString(16).toUpperCase().padStart(4, '0')} (${carryStr})`
+      });
+    }
+
+    // Fold any remaining carry
+    while (sum >> 16) {
+      sum = (sum & 0xFFFF) + (sum >> 16);
+    }
+
+    // Take bitwise 1's complement (NOT)
+    const checksum = (~sum) & 0xFFFF;
+    steps.push({
+      step: 'invert',
+      title: "One's Complement Inversion (~Sum)",
+      detail: `~0x${sum.toString(16).toUpperCase().padStart(4, '0')} = 0x${checksum.toString(16).toUpperCase().padStart(4, '0')} (Binary: ${checksum.toString(2).padStart(16, '0')})`
+    });
+
+    // Verification step: Sum of original words + checksum should equal 0xFFFF
+    let verifSum = sum + checksum;
+    while (verifSum >> 16) {
+      verifSum = (verifSum & 0xFFFF) + (verifSum >> 16);
+    }
+
+    return {
+      checksum,
+      checksumHex: '0x' + checksum.toString(16).toUpperCase().padStart(4, '0'),
+      checksumBin: checksum.toString(2).padStart(16, '0'),
+      words,
+      steps,
+      verifSum,
+      isValid: verifSum === 0xFFFF
+    };
+  }
+
+  /**
+   * Adler-32 implementation
+   */
+  static adler32(bytes) {
+    const MOD_ADLER = 65521;
+    let a = 1, b = 0;
+    for (let i = 0; i < bytes.length; i++) {
+      a = (a + bytes[i]) % MOD_ADLER;
+      b = (b + a) % MOD_ADLER;
+    }
+    const res = ((b << 16) | a) >>> 0;
+    return '0x' + res.toString(16).toUpperCase().padStart(8, '0');
+  }
+
+  /**
+   * CRC-32 (IEEE 802.3 standard)
+   */
+  static crc32(bytes) {
+    let crc = 0 ^ (-1);
+    for (let i = 0; i < bytes.length; i++) {
+      crc = (crc >>> 8) ^ CRC32_TABLE[(crc ^ bytes[i]) & 0xFF];
+    }
+    const res = (crc ^ (-1)) >>> 0;
+    return '0x' + res.toString(16).toUpperCase().padStart(8, '0');
+  }
+}
+
+// Precomputed CRC32 Table
+const CRC32_TABLE = new Uint32Array(256);
+(function initCRC32() {
+  for (let i = 0; i < 256; i++) {
+    let c = i;
+    for (let k = 0; k < 8; k++) {
+      c = ((c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1));
+    }
+    CRC32_TABLE[i] = c >>> 0;
+  }
+})();
+
+/**
+ * -----------------------------------------------------------------------------
+ * Application State & UI Controller
+ * -----------------------------------------------------------------------------
+ */
+class AppController {
+  constructor() {
+    this.currentDataBits = [];
+    this.encodedResult = null;
+    this.currentCodeword = [];
+    this.eventLog = [];
+    this.selectedParityPos = null;
+
+    this.initEventListeners();
+    this.loadInitialPreset();
+  }
+
+  initEventListeners() {
+    // Close dropdowns on outside click
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.menu-item')) {
+        document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+      }
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.ctrlKey && e.key.toLowerCase() === 'n') {
+        e.preventDefault();
+        this.resetAllDefaults();
+      }
+    });
+  }
+
+  logEvent(msg) {
+    const time = new Date().toTimeString().split(' ')[0];
+    this.eventLog.unshift(`[${time}] ${msg}`);
+    if (this.eventLog.length > 50) this.eventLog.pop();
+    this.renderEventLog();
+  }
+
+  loadInitialPreset() {
+    this.loadPreset('nybble');
+  }
+
+  loadPreset(presetType) {
+    const formatSelect = document.getElementById('input-format');
+    const dataInput = document.getElementById('data-input');
+
+    if (presetType === 'nybble') {
+      formatSelect.value = 'bin';
+      dataInput.value = '1011';
+      this.logEvent("Loaded preset: 4-bit Nybble '1011' (Classic Hamming 8,4 SEC-DED).");
+    } else if (presetType === 'byte_a') {
+      formatSelect.value = 'bin';
+      dataInput.value = '01000001';
+      this.logEvent("Loaded preset: 8-bit ASCII 'A' (0x41) (Hamming 13,8 SEC-DED).");
+    } else if (presetType === 'word_11') {
+      formatSelect.value = 'bin';
+      dataInput.value = '10110010110';
+      this.logEvent("Loaded preset: 11-bit Word (Hamming 16,11 SEC-DED).");
+    } else if (presetType === 'hex_cafe') {
+      formatSelect.value = 'hex';
+      dataInput.value = 'CAFE';
+      this.logEvent("Loaded preset: 16-bit Hex 0xCAFE (Hamming 22,16 SEC-DED).");
+    } else if (presetType === 'text_ping') {
+      formatSelect.value = 'text';
+      dataInput.value = 'PING';
+      this.logEvent("Loaded preset: ASCII Text 'PING' (32 bits, multi-word Checksum demo).");
+    }
+
+    this.rebuildCodeword();
+    document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+  }
+
+  onFormatChange() {
+    const format = document.getElementById('input-format').value;
+    const input = document.getElementById('data-input');
+    if (format === 'bin') {
+      input.placeholder = 'e.g. 1011001';
+      input.value = '1011001';
+    } else if (format === 'hex') {
+      input.placeholder = 'e.g. 4B or CAFE';
+      input.value = '4B';
+    } else if (format === 'text') {
+      input.placeholder = 'e.g. DATA';
+      input.value = 'OK';
+    }
+    this.rebuildCodeword();
+  }
+
+  onInputDataChanged() {
+    this.rebuildCodeword();
+  }
+
+  rebuildCodeword() {
+    const format = document.getElementById('input-format').value;
+    const rawVal = document.getElementById('data-input').value.trim();
+
+    if (format === 'bin') {
+      this.currentDataBits = BitUtils.binaryStringToBits(rawVal);
+    } else if (format === 'hex') {
+      this.currentDataBits = BitUtils.hexToBits(rawVal);
+    } else if (format === 'text') {
+      this.currentDataBits = BitUtils.textToBits(rawVal);
+    }
+
+    // Limit maximum bits for interactive visual grid to 24 bits for clean visual clarity
+    if (this.currentDataBits.length > 24) {
+      this.currentDataBits = this.currentDataBits.slice(0, 24);
+      this.logEvent("Note: Input truncated to 24 data bits for high-density visual register grid.");
+    }
+
+    // Encode with Extended Hamming (SEC-DED)
+    this.encodedResult = ExtendedHamming.encode(this.currentDataBits);
+    // Clone codeword for interactive manipulation
+    this.currentCodeword = JSON.parse(JSON.stringify(this.encodedResult.codeword));
+
+    // Calculate clean reference checksum for the message
+    const cleanBits = this.encodedResult.codeword.map(c => c.originalBit);
+    const cleanBytes = BitUtils.bitsToBytes(cleanBits);
+    this.referenceChecksum = InternetChecksum.calculateWithSteps(cleanBytes).checksum;
+
+    this.logEvent(`Encoded ${this.encodedResult.m} data bits into ${this.encodedResult.totalBits}-bit SEC-DED Codeword.`);
+    this.refreshUI();
+  }
+
+  /**
+   * Toggle bit at position pos (0, 1, 2, ...)
+   */
+  toggleBit(pos) {
+    if (pos < 0 || pos >= this.currentCodeword.length) return;
+    const cell = this.currentCodeword[pos];
+    const prev = cell.bit;
+    cell.bit = cell.bit === 1 ? 0 : 1;
+    this.logEvent(`Toggled Bit #${pos} (${cell.role}) from ${prev} to ${cell.bit}.`);
+    this.refreshUI();
+  }
+
+  /**
+   * Inject 1 or 2 random bit errors
+   */
+  injectErrors(count) {
+    const len = this.currentCodeword.length;
+    if (len === 0) return;
+
+    if (count === 1) {
+      const idx = Math.floor(Math.random() * len);
+      this.toggleBit(idx);
+      this.logEvent(`[Hardware Simulator] Injected single-bit error at position #${idx} (${this.currentCodeword[idx].role}).`);
+    } else if (count === 2) {
+      if (len < 2) return;
+      const idx1 = Math.floor(Math.random() * len);
+      let idx2 = Math.floor(Math.random() * len);
+      while (idx2 === idx1) {
+        idx2 = Math.floor(Math.random() * len);
+      }
+      this.toggleBit(idx1);
+      this.toggleBit(idx2);
+      this.logEvent(`[Hardware Simulator] Injected 2-bit error at positions #${idx1} and #${idx2}.`);
+    }
+  }
+
+  injectParityBitError() {
+    // Specifically pick a parity bit (P0 or P1 or P2)
+    const parityIndices = [];
+    for (let i = 0; i < this.currentCodeword.length; i++) {
+      if (this.currentCodeword[i].isParity) parityIndices.push(i);
+    }
+    if (parityIndices.length === 0) return;
+    const target = parityIndices[Math.floor(Math.random() * parityIndices.length)];
+    this.toggleBit(target);
+    this.logEvent(`[Hardware Simulator] Injected error specifically in parity bit #${target} (${this.currentCodeword[target].role}).`);
+  }
+
+  clearErrors() {
+    for (let i = 0; i < this.currentCodeword.length; i++) {
+      this.currentCodeword[i].bit = this.currentCodeword[i].originalBit;
+    }
+    this.logEvent("Codeword reset to original encoded values. All errors cleared.");
+    this.refreshUI();
+  }
+
+  applyCorrection() {
+    const analysis = ExtendedHamming.analyze(this.currentCodeword);
+    if (analysis.classification === 'SINGLE_BIT_CORRECTABLE' || analysis.classification === 'SINGLE_BIT_P0') {
+      const errPos = analysis.errorBitPos;
+      const prev = this.currentCodeword[errPos].bit;
+      this.currentCodeword[errPos].bit = prev === 1 ? 0 : 1;
+      this.logEvent(`[SEC Auto-Correction Applied] Flipped bit #${errPos} (${this.currentCodeword[errPos].role}) from ${prev} to ${this.currentCodeword[errPos].bit}. Original data restored!`);
+      this.refreshUI();
+    } else if (analysis.classification === 'DOUBLE_BIT_DETECTED') {
+      alert("Notice: SEC-DED detected a DOUBLE-BIT error!\n\nStandard standalone SEC-DED cannot pinpoint 2-bit locations alone because the syndrome overlaps with other single-bit error states. However, the system has automatically activated the Checksum Tie-Breaker below to evaluate candidate bit pairs (i ⊕ j = S) and resolve the exact 2-bit error!");
+      this.logEvent("[SEC Standalone Blocked] Double-bit error detected. Triggering Checksum-Assisted 2-Bit DEC Resolver.");
+    } else {
+      this.logEvent("Codeword already valid; no correction needed.");
+    }
+  }
+
+  /**
+   * Find all candidate pairs of bit positions (i, j) that could produce syndrome S
+   * under a 2-bit error, and evaluate them against the transport checksum.
+   */
+  findDoubleBitCandidates(analysis) {
+    const S = analysis.syndromeValue;
+    const n = this.currentCodeword.length - 1;
+    const candidatePairs = [];
+
+    // Pair A: If S <= n, (0, S) represents an error in P0 and bit S
+    if (S <= n && S > 0) {
+      candidatePairs.push([0, S]);
+    }
+
+    // Pairs B: All (i, j) with 1 <= i < j <= n such that i ^ j === S
+    for (let i = 1; i <= n; i++) {
+      const j = i ^ S;
+      if (j > i && j <= n) {
+        candidatePairs.push([i, j]);
+      }
+    }
+
+    // Evaluate each candidate pair by simulating flipping both bits and testing the checksum
+    const evaluated = [];
+    let winningPair = null;
+
+    candidatePairs.forEach(pair => {
+      const [p1, p2] = pair;
+      const testBits = this.currentCodeword.map((c, idx) => {
+        let b = c.bit;
+        if (idx === p1 || idx === p2) {
+          b = b === 1 ? 0 : 1;
+        }
+        return b;
+      });
+      const testBytes = BitUtils.bitsToBytes(testBits);
+      const testChk = InternetChecksum.calculateWithSteps(testBytes).checksum;
+      const isMatch = (testChk === this.referenceChecksum);
+
+      if (isMatch && !winningPair) {
+        winningPair = pair;
+      }
+
+      evaluated.push({
+        pair,
+        p1,
+        p2,
+        role1: this.currentCodeword[p1].role,
+        role2: this.currentCodeword[p2].role,
+        calcChecksumHex: '0x' + testChk.toString(16).toUpperCase().padStart(4, '0'),
+        isMatch
+      });
+    });
+
+    return { candidates: evaluated, winningPair, S };
+  }
+
+  resolveDoubleBitError() {
+    const analysis = ExtendedHamming.analyze(this.currentCodeword);
+    if (analysis.classification !== 'DOUBLE_BIT_DETECTED') {
+      alert("No active 2-bit error to resolve.");
+      return;
+    }
+    const { candidates, winningPair, S } = this.findDoubleBitCandidates(analysis);
+    if (!winningPair) {
+      alert("Unable to isolate 2-bit error: None of the candidate pairs satisfied the original Checksum.");
+      return;
+    }
+    const [p1, p2] = winningPair;
+    const prev1 = this.currentCodeword[p1].bit;
+    const prev2 = this.currentCodeword[p2].bit;
+    this.currentCodeword[p1].bit = prev1 === 1 ? 0 : 1;
+    this.currentCodeword[p2].bit = prev2 === 1 ? 0 : 1;
+    this.logEvent(`[2-Bit DEC Corrected] Flipped Bit #${p1} (${this.currentCodeword[p1].role}: ${prev1}->${this.currentCodeword[p1].bit}) and Bit #${p2} (${this.currentCodeword[p2].role}: ${prev2}->${this.currentCodeword[p2].bit})! Restored pristine data matching Checksum 0x${this.referenceChecksum.toString(16).toUpperCase().padStart(4, '0')}.`);
+    this.refreshUI();
+  }
+
+  highlightParityCoverage(parityPos) {
+    this.selectedParityPos = parityPos;
+    this.renderBitGridHighlight();
+  }
+
+  clearParityCoverage() {
+    this.selectedParityPos = null;
+    this.renderBitGridHighlight();
+  }
+
+  /**
+   * Main Refresh Pipeline
+   */
+  refreshUI() {
+    const analysis = ExtendedHamming.analyze(this.currentCodeword);
+    this.renderStats();
+    this.renderBitGrid(analysis);
+    this.renderChecksum();
+    this.renderSyndromeAnalysis(analysis);
+    this.renderMatrix(analysis);
+    this.renderStatusBar(analysis);
+  }
+
+  renderStats() {
+    const m = this.encodedResult.m;
+    const r = this.encodedResult.r;
+    const total = this.encodedResult.totalBits;
+    document.getElementById('bit-stats-label').textContent =
+      `Data: ${m} bits | Parity: ${r} bits + P0 | Codeword: ${total} bits`;
+  }
+
+  renderBitGrid(analysis) {
+    const container = document.getElementById('bit-grid-cells');
+    container.innerHTML = '';
+
+    for (let i = 0; i < this.currentCodeword.length; i++) {
+      const cellData = this.currentCodeword[i];
+      const isFlipped = cellData.bit !== cellData.originalBit;
+
+      const cell = document.createElement('div');
+      cell.className = `bit-cell ${cellData.pos === 0 ? 'cell-overall' : (cellData.isParity ? 'cell-parity' : 'cell-data')} ${isFlipped ? 'cell-flipped' : ''}`;
+      cell.dataset.pos = i;
+
+      // Parity hover coverage
+      if (cellData.isParity) {
+        cell.onmouseenter = () => this.highlightParityCoverage(cellData.pos);
+        cell.onmouseleave = () => this.clearParityCoverage();
+      } else {
+        cell.onmouseenter = () => {
+          // Highlight parity bits that monitor this data bit
+          this.highlightDataMonitor(cellData.pos);
+        };
+        cell.onmouseleave = () => this.clearParityCoverage();
+      }
+
+      cell.onclick = () => this.toggleBit(i);
+
+      // Top Bar: Role badge
+      const topBar = document.createElement('div');
+      topBar.className = 'cell-top-bar';
+      const roleSpan = document.createElement('span');
+      roleSpan.className = `cell-role-badge ${cellData.pos === 0 ? 'cell-role-p0' : (cellData.isParity ? 'cell-role-p' : 'cell-role-d')}`;
+      roleSpan.textContent = cellData.role;
+      topBar.appendChild(roleSpan);
+
+      // Value Box
+      const valBox = document.createElement('div');
+      valBox.className = 'cell-value-container';
+
+      const bitVal = document.createElement('div');
+      bitVal.className = 'cell-bit-val';
+      bitVal.textContent = cellData.bit;
+      valBox.appendChild(bitVal);
+
+      if (isFlipped) {
+        const flippedTag = document.createElement('div');
+        flippedTag.className = 'cell-flipped-tag';
+        flippedTag.textContent = `[FLIP ${cellData.originalBit}]`;
+        valBox.appendChild(flippedTag);
+      } else {
+        const origTag = document.createElement('div');
+        origTag.className = 'cell-original-tag';
+        origTag.textContent = cellData.isParity ? 'Parity' : 'Data';
+        valBox.appendChild(origTag);
+      }
+
+      // Bottom Bar: Index and binary address
+      const bottomBar = document.createElement('div');
+      bottomBar.className = 'cell-bottom-bar';
+      const binAddr = i.toString(2).padStart(Math.max(3, analysis.r), '0');
+      bottomBar.textContent = `#${i} (${binAddr})`;
+
+      cell.appendChild(topBar);
+      cell.appendChild(valBox);
+      cell.appendChild(bottomBar);
+
+      container.appendChild(cell);
+    }
+
+    this.renderBitGridHighlight();
+  }
+
+  highlightDataMonitor(dataPos) {
+    // A data bit at position pos is covered by parity bit 2^j if (pos & 2^j) != 0, and by P0
+    const coveredBy = [0];
+    for (let j = 0; (1 << j) < this.currentCodeword.length; j++) {
+      const pPos = 1 << j;
+      if ((dataPos & pPos) !== 0) {
+        coveredBy.push(pPos);
+      }
+    }
+    this.selectedParityPos = { multiple: coveredBy };
+    this.renderBitGridHighlight();
+  }
+
+  renderBitGridHighlight() {
+    const cells = document.querySelectorAll('.bit-cell');
+    cells.forEach(c => c.classList.remove('cell-highlight-coverage'));
+
+    if (this.selectedParityPos === null) return;
+
+    if (typeof this.selectedParityPos === 'number') {
+      const pPos = this.selectedParityPos;
+      const parityObj = this.currentCodeword[pPos];
+      if (!parityObj) return;
+
+      const covered = parityObj.covers || [];
+      cells.forEach(c => {
+        const pos = parseInt(c.dataset.pos, 10);
+        if (pos === pPos || covered.includes(pos)) {
+          c.classList.add('cell-highlight-coverage');
+        }
+      });
+    } else if (this.selectedParityPos && this.selectedParityPos.multiple) {
+      const pList = this.selectedParityPos.multiple;
+      cells.forEach(c => {
+        const pos = parseInt(c.dataset.pos, 10);
+        if (pList.includes(pos)) {
+          c.classList.add('cell-highlight-coverage');
+        }
+      });
+    }
+  }
+
+  renderChecksum() {
+    // Convert current codeword bits to byte array for RFC 1071 calculation
+    const bits = this.currentCodeword.map(c => c.bit);
+    const bytes = BitUtils.bitsToBytes(bits);
+
+    const chkResult = InternetChecksum.calculateWithSteps(bytes);
+    const adlerHex = InternetChecksum.adler32(bytes);
+    const crcHex = InternetChecksum.crc32(bytes);
+
+    document.getElementById('chk-hex-display').textContent = chkResult.checksumHex;
+    document.getElementById('chk-bin-display').textContent =
+      chkResult.checksumBin.match(/.{1,4}/g).join(' ');
+
+    const statusBadge = document.getElementById('chk-status-badge');
+    const validTag = document.getElementById('chk-valid-tag');
+    const verifSumEl = document.getElementById('chk-verif-sum');
+    const verifDescEl = document.getElementById('chk-verif-desc');
+
+    verifSumEl.textContent = '0x' + chkResult.verifSum.toString(16).toUpperCase().padStart(4, '0');
+
+    if (chkResult.isValid) {
+      statusBadge.textContent = 'PASS';
+      statusBadge.style.background = '#e6f4ea';
+      statusBadge.style.borderColor = '#137333';
+      statusBadge.style.color = '#0d5a23';
+      validTag.textContent = 'PASS';
+      verifDescEl.textContent = "1's complement sum equals 0xFFFF (All 1s = pristine transmission).";
+    } else {
+      statusBadge.textContent = 'FAIL';
+      statusBadge.style.background = '#fce8e6';
+      statusBadge.style.borderColor = '#c5221f';
+      statusBadge.style.color = '#961714';
+      validTag.textContent = 'CORRUPTED';
+      verifDescEl.textContent = "Sum differs from 0xFFFF! Multi-bit corruption detected by receiver.";
+    }
+
+    document.getElementById('adler32-display').textContent = adlerHex;
+    document.getElementById('crc32-display').textContent = crcHex;
+
+    // Render step-by-step arithmetic tab
+    const stepContainer = document.getElementById('checksum-step-container');
+    let stepHtml = `RFC 1071 Word Processing [Big-Endian 16-bit blocks]:\n`;
+    stepHtml += `--------------------------------------------------------\n`;
+    chkResult.steps.forEach(s => {
+      stepHtml += `• ${s.title.padEnd(35)} : ${s.detail}\n`;
+    });
+    stepHtml += `--------------------------------------------------------\n`;
+    stepHtml += `Final Computed Checksum Word : ${chkResult.checksumHex} (${chkResult.checksumBin})\n`;
+    stepHtml += `Receiver Integrity Check     : Sum = 0x${chkResult.verifSum.toString(16).toUpperCase().padStart(4, '0')} (${chkResult.isValid ? 'MATCH PASS' : 'CHECKSUM MISMATCH FAIL'})\n`;
+
+    stepContainer.textContent = stepHtml;
+  }
+
+  renderSyndromeAnalysis(analysis) {
+    const banner = document.getElementById('diagnostic-banner');
+    const titleEl = document.getElementById('diag-title');
+    const descEl = document.getElementById('diag-desc');
+    const codeEl = document.getElementById('diag-syndrome-code');
+    const autoCorrectBtn = document.getElementById('btn-autocorrect');
+
+    // Reset table active rows
+    ['row-case-0', 'row-case-1', 'row-case-p0', 'row-case-2'].forEach(id => {
+      document.getElementById(id).classList.remove('active-row');
+    });
+
+    banner.className = 'diagnostic-alert';
+
+    const sBin = analysis.syndromeValue.toString(2).padStart(analysis.r, '0');
+    codeEl.textContent = `S = ${analysis.syndromeValue} (0b${sBin}) | P_check = ${analysis.overallParityCheck}`;
+
+    const resolverPanel = document.getElementById('double-bit-resolver-panel');
+    const btnResolve2Bit = document.getElementById('btn-resolve-2bit');
+    const candidatesContainer = document.getElementById('double-bit-candidates-container');
+
+    if (analysis.classification === 'VALID') {
+      banner.classList.add('status-valid');
+      titleEl.textContent = 'STATUS: CODEWORD VALID (NO ERRORS DETECTED)';
+      descEl.textContent = analysis.description;
+      document.getElementById('row-case-0').classList.add('active-row');
+      autoCorrectBtn.disabled = true;
+      if (resolverPanel) resolverPanel.style.display = 'none';
+      if (btnResolve2Bit) btnResolve2Bit.style.display = 'none';
+    } else if (analysis.classification === 'SINGLE_BIT_CORRECTABLE') {
+      banner.classList.add('status-warning');
+      titleEl.textContent = `STATUS: 1-BIT ERROR DETECTED AT BIT #${analysis.errorBitPos} (CORRECTABLE)`;
+      descEl.textContent = analysis.description;
+      document.getElementById('row-case-1').classList.add('active-row');
+      autoCorrectBtn.disabled = false;
+      if (resolverPanel) resolverPanel.style.display = 'none';
+      if (btnResolve2Bit) btnResolve2Bit.style.display = 'none';
+    } else if (analysis.classification === 'SINGLE_BIT_P0') {
+      banner.classList.add('status-warning');
+      titleEl.textContent = 'STATUS: 1-BIT ERROR IN OVERALL PARITY P0 (CORRECTABLE)';
+      descEl.textContent = analysis.description;
+      document.getElementById('row-case-p0').classList.add('active-row');
+      autoCorrectBtn.disabled = false;
+      if (resolverPanel) resolverPanel.style.display = 'none';
+      if (btnResolve2Bit) btnResolve2Bit.style.display = 'none';
+    } else if (analysis.classification === 'DOUBLE_BIT_DETECTED') {
+      banner.classList.add('status-danger');
+      titleEl.textContent = 'STATUS: 2-BIT DOUBLE ERROR DETECTED — UNCORRECTABLE WITH STANDALONE SEC-DED';
+      descEl.textContent = analysis.description + " [Tie-Breaker Resolver Active below]";
+      document.getElementById('row-case-2').classList.add('active-row');
+      autoCorrectBtn.disabled = true;
+
+      // Activate Checksum-Assisted 2-Bit Correction Resolver
+      if (resolverPanel && candidatesContainer) {
+        resolverPanel.style.display = 'block';
+        if (btnResolve2Bit) btnResolve2Bit.style.display = 'inline-flex';
+
+        const { candidates, winningPair, S } = this.findDoubleBitCandidates(analysis);
+        let candText = `Target Syndrome S = ${S} (0b${sBin}) | Original Target Checksum = 0x${this.referenceChecksum.toString(16).toUpperCase().padStart(4, '0')}\n`;
+        candText += `--------------------------------------------------------------------------------------------------------\n`;
+        candidates.forEach((c, idx) => {
+          const matchFlag = c.isMatch ? '★ [MATCH! TARGET RESTORED]' : '✗ [MISMATCH]';
+          candText += `Pair #${idx + 1}: Bits (#${c.p1}, #${c.p2}) [${c.role1}, ${c.role2}] -> XOR sum = ${c.p1 ^ c.p2} | Test Checksum: ${c.calcChecksumHex} ${matchFlag}\n`;
+        });
+
+        if (winningPair) {
+          candText += `--------------------------------------------------------------------------------------------------------\n`;
+          candText += `SUCCESS: Unique pair (#${winningPair[0]}, #${winningPair[1]}) resolves the syndrome and matches the transport checksum! Click 'Apply 2-Bit Correction' above to restore.\n`;
+        } else {
+          candText += `\nNo candidate pair matched the expected checksum. Retransmission required.\n`;
+        }
+        candidatesContainer.textContent = candText;
+      }
+    }
+
+    // Render Equations
+    const eqContainer = document.getElementById('syndrome-equations-container');
+    let eqText = '';
+    analysis.equations.forEach(eq => {
+      const statusStr = eq.passed ? '✓ [PASS]' : '✗ [MISMATCH -> 1]';
+      eqText += `${eq.formula.padEnd(38)} => ${eq.valuesStr.padEnd(20)} ${statusStr}\n`;
+    });
+
+    // Overall parity calculation
+    let p0CheckSum = 0;
+    const p0Terms = [];
+    this.currentCodeword.forEach(c => {
+      p0Terms.push(c.bit);
+      p0CheckSum ^= c.bit;
+    });
+    eqText += `----------------------------------------------------------------------------------------\n`;
+    eqText += `P_check = ⊕ (all bits c0..c${this.currentCodeword.length - 1})   => ${p0CheckSum === 0 ? '0 (Even: Parity satisfied)' : '1 (Odd: Parity violated)'}\n`;
+    eqText += `Calculated Syndrome Integer S = ${analysis.syndromeValue} (Binary: 0b${sBin})\n`;
+
+    eqContainer.textContent = eqText;
+  }
+
+  renderMatrix(analysis) {
+    const container = document.getElementById('matrix-display-container');
+    const n = this.currentCodeword.length - 1;
+    const r = analysis.r;
+
+    let txt = `Parity Check Matrix H  [${r} rows × ${n} columns]:\n`;
+    txt += `(Columns 1 to ${n} correspond to binary bit index)\n\n`;
+
+    // Header column indices
+    let colHeader = '     ';
+    let roleHeader = '     ';
+    for (let c = 1; c <= n; c++) {
+      colHeader += c.toString().padStart(4, ' ');
+      roleHeader += this.currentCodeword[c].role.padStart(4, ' ');
+    }
+    txt += roleHeader + '\n' + colHeader + '\n';
+    txt += '     ' + '----'.repeat(n) + '\n';
+
+    // Rows corresponding to syndrome bits s0, s1, s2, ...
+    for (let row = 0; row < r; row++) {
+      let rowStr = `s${row} |`;
+      const pPos = 1 << row;
+      for (let col = 1; col <= n; col++) {
+        const bitInH = ((col & pPos) !== 0) ? 1 : 0;
+        rowStr += bitInH.toString().padStart(4, ' ');
+      }
+      txt += rowStr + '\n';
+    }
+
+    txt += '\nOverall Parity Vector P0 checks all columns: [ 1 1 1 1 ... 1 ]\n';
+    txt += '\nHardware Mask Representation:\n';
+    for (let row = 0; row < r; row++) {
+      const maskVal = (1 << row);
+      txt += `Bitmask for P${maskVal}: Position bit #${row} (Decimal ${maskVal}, Hex 0x${maskVal.toString(16).toUpperCase()})\n`;
+    }
+
+    txt += '\n========================================================================================\n';
+    txt += 'THEORETICAL FOUNDATIONS & 2-BIT CORRECTION ARCHITECTURES:\n';
+    txt += '========================================================================================\n';
+    txt += '1. Generator Matrix (G) & Linear Systematic Encoding:\n';
+    txt += '   - For an (n, k) linear block code, G = [ I_k | P ] where I_k is the kxk identity.\n';
+    txt += '   - Codeword c = d · G (mod 2). Every codeword satisfies H · c^T = 0.\n\n';
+    txt += '2. The 2-Bit Ambiguity Problem in Classical SEC-DED:\n';
+    txt += '   - Standard Extended Hamming has minimum distance d_min = 4.\n';
+    txt += '   - If 2 errors flip bits i and j, the syndrome is S = column(i) ⊕ column(j) = i ⊕ j.\n';
+    txt += '   - Multiple pairs produce the exact same XOR sum S, making standalone correction ambiguous.\n\n';
+    txt += '3. How this Studio Adapts SEC-DED for 2-Bit Correction:\n';
+    txt += '   - Technique A (Active in this tool): Checksum-Assisted DEC Resolver.\n';
+    txt += '     The syndrome S narrows down the error to candidate pairs (i, j) where i ⊕ j = S.\n';
+    txt += '     The RFC 1071 Internet Checksum verifies each candidate, uniquely isolating and correcting both errors.\n';
+    txt += '   - Technique B: 2D Product Hamming Codes.\n';
+    txt += '     Data bits are arranged in an NxM matrix. Hamming codes run across rows and columns.\n';
+    txt += '     Any 2-bit error is resolved because even if two errors fall in the same row, the\n';
+    txt += '     two distinct column Hamming decoders each see only 1 error and correct both bits algebraically.\n';
+    txt += '   - Technique C: BCH Codes (t=2).\n';
+    txt += '     Uses polynomials over Galois Field GF(2^m) to correct 2 errors using the Berlekamp-Massey algorithm.\n';
+
+    container.textContent = txt;
+  }
+
+  renderEventLog() {
+    const el = document.getElementById('event-log-container');
+    el.textContent = this.eventLog.join('\n');
+  }
+
+  renderStatusBar(analysis) {
+    let flippedCount = 0;
+    this.currentCodeword.forEach(c => {
+      if (c.bit !== c.originalBit) flippedCount++;
+    });
+
+    document.getElementById('sb-errors').textContent = `Errors: ${flippedCount}`;
+    document.getElementById('sb-diagnosis').textContent = `Diagnosis: ${analysis.classification} (${analysis.description})`;
+    document.getElementById('sb-status').textContent = flippedCount > 0 ? 'Modified' : 'Pristine';
+
+    const chkText = document.getElementById('chk-hex-display').textContent;
+    document.getElementById('sb-chk').textContent = `Checksum: ${chkText}`;
+  }
+
+  exportStateJson() {
+    const state = {
+      timestamp: new Date().toISOString(),
+      dataBits: this.currentDataBits,
+      codeword: this.currentCodeword.map(c => ({
+        pos: c.pos,
+        role: c.role,
+        currentBit: c.bit,
+        originalBit: c.originalBit,
+        isFlipped: c.bit !== c.originalBit
+      })),
+      analysis: ExtendedHamming.analyze(this.currentCodeword)
+    };
+    const jsonStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+    const dlAnchor = document.createElement('a');
+    dlAnchor.setAttribute("href", jsonStr);
+    dlAnchor.setAttribute("download", `ecc_state_${Date.now()}.json`);
+    document.body.appendChild(dlAnchor);
+    dlAnchor.click();
+    dlAnchor.remove();
+    this.logEvent("Codeword state exported to JSON.");
+  }
+
+  resetAllDefaults() {
+    this.loadPreset('nybble');
+    this.eventLog = [];
+    this.logEvent("System state reset to defaults.");
+  }
+}
+
+// Global UI helper functions
+let appInstance = null;
+
+function toggleMenu(menuId) {
+  const item = document.getElementById(menuId);
+  const wasActive = item.classList.contains('active');
+  document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+  if (!wasActive) item.classList.add('active');
+}
+
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+
+  if (tabId === 'tab-syndrome') {
+    document.getElementById('btn-tab-syndrome').classList.add('active');
+    document.getElementById('tab-syndrome').classList.add('active');
+  } else if (tabId === 'tab-checksum') {
+    document.getElementById('btn-tab-checksum').classList.add('active');
+    document.getElementById('tab-checksum').classList.add('active');
+  } else if (tabId === 'tab-matrix') {
+    document.getElementById('btn-tab-matrix').classList.add('active');
+    document.getElementById('tab-matrix').classList.add('active');
+  } else if (tabId === 'tab-history') {
+    document.getElementById('btn-tab-history').classList.add('active');
+    document.getElementById('tab-history').classList.add('active');
+  }
+}
+
+function onFormatChange() { appInstance.onFormatChange(); }
+function onInputDataChanged() { appInstance.onInputDataChanged(); }
+function rebuildCodeword() { appInstance.rebuildCodeword(); }
+function clearErrors() { appInstance.clearErrors(); }
+function injectErrors(n) { appInstance.injectErrors(n); }
+function injectParityBitError() { appInstance.injectParityBitError(); }
+function applyCorrection() { appInstance.applyCorrection(); }
+function resolveDoubleBitError() { appInstance.resolveDoubleBitError(); }
+function loadPreset(p) { appInstance.loadPreset(p); }
+function resetAllDefaults() { appInstance.resetAllDefaults(); }
+function exportStateJson() { appInstance.exportStateJson(); }
+function clearEventLog() {
+  appInstance.eventLog = [];
+  appInstance.renderEventLog();
+}
+
+// Initialize on DOM load
+window.addEventListener('DOMContentLoaded', () => {
+  appInstance = new AppController();
+});
+</script>
+</body>
+</html>
